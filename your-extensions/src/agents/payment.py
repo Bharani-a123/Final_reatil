@@ -122,7 +122,7 @@ class PaymentAgent:
                             state.payment_status = "authorized"
                             state.payment_method = "razorpay"
                             
-                            # 1. Decrement stock for purchased items
+                            # 1. Decrement stock and save purchase history in DB
                             db = SessionLocal()
                             try:
                                 for entry in state.cart.contents:
@@ -139,16 +139,25 @@ class PaymentAgent:
                                         inv_item = db.query(InventoryItem).filter(InventoryItem.name.like(f"%{item_name}%")).first()
                                         if inv_item:
                                             update_inventory_stock(inv_item.sku, location, -amount)
+
+                                # Save purchase history in customer profile in DB
+                                if state.customer_id:
+                                    cust = db.query(CustomerProfile).filter(CustomerProfile.customer_id == state.customer_id).first()
+                                    if cust:
+                                        history = json.loads(cust.purchase_history or "[]")
+                                        for entry in state.cart.contents:
+                                            history.append(entry.get("item"))
+                                        cust.purchase_history = json.dumps(history)
+                                        db.commit()
                             except Exception as ex:
-                                logger.error(f"Failed to decrement stock in payment verification: {ex}")
+                                logger.error(f"Failed to update stock/history in payment verification: {ex}")
                             finally:
                                 db.close()
 
                             # 2. Proceed with fulfillment flow
                             import random
                             ref_number = f"REF_{random.randint(100000, 999999)}"
-                            state.fulfillment_status = "fulfilled" if state.fulfillment_method == "ship_to_home" else "ready_for_pickup"
-                            state.fulfillment_ref = ref_number
+                            state.tracking_number = ref_number
                             
                             fulfillment_desc = ""
                             if state.fulfillment_method == "ship_to_home":

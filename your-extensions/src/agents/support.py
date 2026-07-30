@@ -139,8 +139,12 @@ class SupportAgent:
                 tool_name, tool_args = parse_tool_call_fallback(message.content)
 
         output_state = state
-        if tool_name == "check_order_status":
+        query_lower = (state.query or "").lower()
+        if tool_name == "check_order_status" or ("order" in query_lower and any(w in query_lower for w in ["show", "track", "status", "where"])):
             ref = tool_args.get("order_reference", "")
+            if not ref or ref.lower() in ("unknown", "null", "none", ""):
+                if state.tracking_number:
+                    ref = state.tracking_number
             output_state.response = self._check_status(ref, state)
         elif tool_name == "request_order_return":
             ref = tool_args.get("order_reference", "")

@@ -96,7 +96,7 @@ class ExtendedPlannerAgent(PlannerAgent):
         q_lower = query.lower()
 
         # 1. Deterministic/Keyword-based Routing Rules (High accuracy overrides)
-        if any(w in q_lower for w in ["track", "status", "return", "refund", "exchange", "ref_"]) or ("order" in q_lower and "where" in q_lower):
+        if any(w in q_lower for w in ["track", "status", "return", "refund", "exchange", "ref_", "order"]):
             return "support"
         if any(w in q_lower for w in ["coupon", "discount", "loyalty", "points", "redeem", "rewards"]):
             return "loyalty"
