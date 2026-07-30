@@ -513,6 +513,65 @@ class ExtendedChatterAgent(ChatterAgent):
         state.response = full_response
         state.context = f"{state.context}\n{full_response}"
         state.timings["chatter"] = time.monotonic() - start
+
+        if preceding_agent in ("support", "payment") and state.tracking_number:
+            from .database import SessionLocal, CustomerProfile
+            db = SessionLocal()
+            try:
+                cust = db.query(CustomerProfile).filter(CustomerProfile.customer_id == state.customer_id).first()
+                items = []
+                if cust:
+                    items = json.loads(cust.purchase_history or "[]")
+                
+                order_images = {}
+                import requests
+                for name in items:
+                    if name:
+                        try:
+                            ret_response = requests.post(
+                                f"{self.config.retriever_port}/query/text",
+                                json={
+                                    "text": [name],
+                                    "categories": self.config.categories,
+                                    "k": 1,
+                                },
+                                timeout=3.0
+                            )
+                            if ret_response.status_code == 200:
+                                res_json = ret_response.json()
+                                images = res_json.get("images") or []
+                                if images:
+                                    resolved_url = images[0]
+                                    if resolved_url and not resolved_url.startswith('http') and not resolved_url.startsWith('data:') and not resolved_url.startsWith('/images/'):
+                                        resolved_url = f"/images/{resolved_url}"
+                                    order_images[name] = resolved_url
+                        except Exception as e:
+                            logger.warning(f"Failed to lookup order image for {name}: {e}")
+
+                method = state.fulfillment_method or "ship_to_home"
+                status = "Shipped (In-Transit)" if method == "ship_to_home" else "Ready for Pickup"
+                carrier = "Fedex Express" if method == "ship_to_home" else "Downtown Store Pickup"
+                address = state.delivery_address or "Registered Home Address"
+                slot = state.delivery_slot or "Tomorrow morning"
+                
+                order_payload = {
+                    "ref": state.tracking_number,
+                    "status": status,
+                    "carrier": carrier,
+                    "method": method,
+                    "address": address,
+                    "slot": slot,
+                    "items": [
+                        {"productName": name, "productUrl": order_images.get(name, "/images/placeholder.jpg")}
+                        for name in items
+                    ]
+                }
+                writer(f"{json.dumps({'type' : 'order', 'payload' : order_payload, 'timestamp' : time.time()})}")
+            except Exception as e:
+                logger.error(f"Failed to emit order event: {e}")
+            finally:
+                db.close()
+
         save_session_state(state)
         return state
 

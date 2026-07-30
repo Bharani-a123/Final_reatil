@@ -55,7 +55,8 @@ const Chatbox: React.FC<ChatboxProps> = ({
   setRetrievedProducts,
   chatTriggerRef,
   isCartView = false,
-  setIsCartView
+  setIsCartView,
+  setOrderInfo
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const [hasBeenOpened, setHasBeenOpened] = useState<boolean>(false);
@@ -330,6 +331,9 @@ const Chatbox: React.FC<ChatboxProps> = ({
               // Tokens are flowing; schedule enable when they stop
               scheduleEnableSubmit();
             } else if (type === 'images') {
+              if (setOrderInfo) {
+                setOrderInfo(null);
+              }
               const images = Object.entries(payload).map(([productName, productUrl]) => {
                 let resolvedUrl = String(productUrl);
                 if (resolvedUrl && !resolvedUrl.startsWith('http') && !resolvedUrl.startsWith('data:') && !resolvedUrl.startsWith('/images/')) {
@@ -343,6 +347,10 @@ const Chatbox: React.FC<ChatboxProps> = ({
 
               if (setRetrievedProducts) {
                 setRetrievedProducts(images);
+              }
+            } else if (type === 'order') {
+              if (setOrderInfo) {
+                setOrderInfo(payload);
               }
             }
 
@@ -400,6 +408,9 @@ const Chatbox: React.FC<ChatboxProps> = ({
       setImage("");
       setPreviewImage("");
       setNewRenderImage("");
+      if (setOrderInfo) {
+        setOrderInfo(null);
+      }
       sessionStorage.removeItem('shopping_user_id');
       sessionStorage.removeItem('shopping_chat_messages');
 

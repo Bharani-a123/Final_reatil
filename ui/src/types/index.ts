@@ -32,6 +32,7 @@ export interface ChatboxProps {
   chatTriggerRef?: React.MutableRefObject<((msg: string) => void) | null>;
   isCartView?: boolean;
   setIsCartView?: (value: boolean) => void;
+  setOrderInfo?: (value: any) => void;
 }
 
 export interface ApparelProps {
@@ -39,6 +40,7 @@ export interface ApparelProps {
   retrievedProducts?: any[];
   onRemoveProduct?: (name: string) => void;
   isCartView?: boolean;
+  orderInfo?: any;
 }
 
 export interface SafeHTMLProps {

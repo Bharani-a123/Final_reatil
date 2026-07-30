@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const [newRenderImage, setNewRenderImage] = useState<string>("");
   const [retrievedProducts, setRetrievedProducts] = useState<any[]>([]);
   const [isCartView, setIsCartView] = useState<boolean>(false);
+  const [orderInfo, setOrderInfo] = useState<any>(null);
   const chatTriggerRef = React.useRef<((msg: string) => void) | null>(null);
 
   const handleRemoveProduct = (productName: string) => {
@@ -34,6 +35,7 @@ const App: React.FC = () => {
         retrievedProducts={retrievedProducts} 
         isCartView={isCartView}
         onRemoveProduct={handleRemoveProduct}
+        orderInfo={orderInfo}
       />
       <Chatbox 
         setNewRenderImage={setNewRenderImage} 
@@ -41,6 +43,7 @@ const App: React.FC = () => {
         isCartView={isCartView}
         setIsCartView={setIsCartView}
         chatTriggerRef={chatTriggerRef}
+        setOrderInfo={setOrderInfo}
       />
       <Footer />
       <ToastContainer position="top-right" />
