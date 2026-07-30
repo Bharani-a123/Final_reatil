@@ -44,7 +44,11 @@ export interface AppConfig {
 // Get configuration based on environment
 const getConfig = (): AppConfig => {
   // Default to nginx proxy routing, but allow local development to target chain-server directly.
-  const baseUrl = process.env.REACT_APP_API_BASE_URL || '/api';
+  let baseUrl = process.env.REACT_APP_API_BASE_URL || '/api';
+
+  if (baseUrl === '/api' && typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    baseUrl = 'http://localhost:8009';
+  }
 
   return {
     api: {

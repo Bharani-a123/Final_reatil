@@ -69,3 +69,8 @@ tests/integration/conversations/**/judge/
 # Environment variables
 .env
 .env.local 
+
+# local run directories
+your-extensions/.run_logs/
+your-extensions/.run_pids/
+your-extensions/data/commerce.db

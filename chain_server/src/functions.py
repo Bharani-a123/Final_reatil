@@ -132,23 +132,23 @@ retrieval_extraction_function = {
                     "items": {"type": "string"}
                 },
                 "category_one": {
-                    "type": "string",
+                    "anyOf": [{"type": "string"}, {"type": "null"}],
                     "description": "Most relevant category from available categories. Must be an exact value from the provided list."
                 },
                 "category_two": {
-                    "type": "string",
+                    "anyOf": [{"type": "string"}, {"type": "null"}],
                     "description": "Second most relevant category from available categories. Must be an exact value from the provided list."
                 },
                 "category_three": {
-                    "type": "string",
+                    "anyOf": [{"type": "string"}, {"type": "null"}],
                     "description": "Third most relevant category from available categories. Must be an exact value from the provided list."
                 },
                 "min_price": {
-                    "type": "number",
+                    "anyOf": [{"type": "string"}, {"type": "number"}, {"type": "null"}],
                     "description": "Minimum price in dollars. OMIT THIS FIELD unless the user explicitly states a lower bound (e.g., 'over $50'). Never default to 0."
                 },
                 "max_price": {
-                    "type": "number",
+                    "anyOf": [{"type": "string"}, {"type": "number"}, {"type": "null"}],
                     "description": "Maximum price in dollars. OMIT THIS FIELD unless the user explicitly states an upper bound (e.g., 'under $100'). Never default to 0."
                 }
             },

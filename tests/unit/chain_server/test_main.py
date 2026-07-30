@@ -49,6 +49,8 @@ class _StubCompiledGraph:
             yield piece
 
     async def ainvoke(self, state: State) -> Dict[str, Any]:
+        import asyncio
+        await asyncio.sleep(0.005)
         self.ainvoke_calls.append(state)
         return {
             "response": self.response_text,

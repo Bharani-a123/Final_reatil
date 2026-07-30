@@ -144,7 +144,7 @@ class TestModuleImportWiring:
     ) -> None:
         created = rails_module._test_created
         # Singleton is built in the module body with this hardcoded path.
-        assert created["from_path_arg"] == "/app/shared/configs/rails"
+        assert str(created["from_path_arg"]).replace("\\", "/") == "/app/shared/configs/rails"
 
 
 class TestBaseRails:

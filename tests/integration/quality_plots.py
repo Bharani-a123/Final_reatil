@@ -21,7 +21,7 @@ fig, axes = plt.subplots(rows, cols, figsize=(6 * cols, 4 * rows))
 axes = axes.flatten()  # Flatten in case it's 2D
 
 for i, filename in enumerate(yaml_files):
-    with open(os.path.join(JUDGE_DIR, filename), 'r') as f:
+    with open(os.path.join(JUDGE_DIR, filename), 'r', encoding='utf-8') as f:
         data = yaml.safe_load(f)
 
     scores = [entry['score'] for entry in data]

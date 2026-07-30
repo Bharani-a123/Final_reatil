@@ -1,0 +1,2 @@
+llm_port: "https://api.openai.com/v1"
+llm_name: "gpt-4o-mini"

@@ -511,3 +511,28 @@ html {
 .button-class {
   cursor: pointer;
 }
+
+.messages__item--assistant a {
+  background-color: #76b900;
+  color: #ffffff !important;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  text-decoration: none !important;
+  display: inline-block;
+  margin: 8px 0;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 6px rgba(118, 185, 0, 0.2);
+  border: 1px solid #76b900;
+}
+
+.messages__item--assistant a:hover {
+  background-color: #5c9000;
+  border-color: #5c9000;
+  box-shadow: 0 6px 8px rgba(92, 144, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.messages__item--assistant a:active {
+  transform: translateY(0);
+}

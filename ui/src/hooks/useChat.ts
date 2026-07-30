@@ -260,7 +260,7 @@ export const useChat = (setNewRenderImage: (value: string) => void): UseChatRetu
     addMessage("assistant" as MessageRole, "", "");
     
     await sleep(1000);
-    const introduction = "Hello! 👋 I'm your dedicated Shopping Assistant created by NVIDIA, here to answer any questions you might have and help you find anything you're looking for. What can I help you with today?";
+    const introduction = "Hello! 👋 I'm your dedicated Avanzare Shopping Assistant, here to answer any questions you might have and help you find anything you're looking for. What can I help you with today?";
     
     const words = introduction.split(" ");
     for (const word of words) {

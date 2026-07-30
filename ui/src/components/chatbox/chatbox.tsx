@@ -50,7 +50,13 @@ const CustomSwitch = styled(Switch)(({ theme }) => ({
   },
 }));
 
-const Chatbox: React.FC<ChatboxProps> = ({ setNewRenderImage }) => {
+const Chatbox: React.FC<ChatboxProps> = ({ 
+  setNewRenderImage, 
+  setRetrievedProducts,
+  chatTriggerRef,
+  isCartView = false,
+  setIsCartView
+}) => {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const [hasBeenOpened, setHasBeenOpened] = useState<boolean>(false);
   const [newMessage, setNewMessage] = useState<string>("");
@@ -63,6 +69,30 @@ const Chatbox: React.FC<ChatboxProps> = ({ setNewRenderImage }) => {
   const [lastAssistantIndex, setLastAssistantIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const shownCartOperations = useRef<Set<string>>(new Set());
+  const isResetting = useRef(false);
+
+  // Assign trigger callback for parent component control
+  React.useEffect(() => {
+    if (chatTriggerRef) {
+      chatTriggerRef.current = (msg: string) => {
+        handleSendMessage(msg);
+      };
+    }
+    return () => {
+      if (chatTriggerRef) chatTriggerRef.current = null;
+    };
+  }, [chatTriggerRef]);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("razorpay_payment_link_status") === "paid") {
+      // Clear URL parameters so they don't fire repeatedly
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setTimeout(() => {
+        handleSendMessage("verify my payment");
+      }, 1500);
+    }
+  }, []);
 
   // Utility functions
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -187,8 +217,15 @@ const Chatbox: React.FC<ChatboxProps> = ({ setNewRenderImage }) => {
     });
   };
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() && !image) return;
+  const handleSendMessage = async (directMessage?: string) => {
+    const messageText = directMessage !== undefined ? directMessage : newMessage;
+    if (!messageText.trim() && !image) return;
+
+    if (setIsCartView) {
+      const queryLower = messageText.toLowerCase();
+      const isCart = ["cart", "checkout", "pay", "buy", "remove", "add", "purchase", "shopping bag"].some(w => queryLower.includes(w));
+      setIsCartView(isCart);
+    }
 
     // Clear previous cart operation notifications for new message
     shownCartOperations.current.clear();
@@ -212,8 +249,8 @@ const Chatbox: React.FC<ChatboxProps> = ({ setNewRenderImage }) => {
       };
 
       // Add user message
-      if (newMessage) {
-        addMessage("user", newMessage, "");
+      if (messageText) {
+        addMessage("user", messageText, "");
       }
       if (image) {
         addMessage("user_image", previewImage, "");
@@ -226,7 +263,7 @@ const Chatbox: React.FC<ChatboxProps> = ({ setNewRenderImage }) => {
       // Prepare API request
       const payload = {
         user_id: userId,
-        query: newMessage,
+        query: messageText,
         guardrails: isGuardrailsOn,
         image: image || "",
         image_bool: !!image
@@ -275,6 +312,7 @@ const Chatbox: React.FC<ChatboxProps> = ({ setNewRenderImage }) => {
           
           try {
             const { type, payload } = JSON.parse(raw);
+            console.log("STREAM:", { type, payload, fullResponse });
             
             if (type === 'content') {
               fullResponse += payload;
@@ -285,20 +323,20 @@ const Chatbox: React.FC<ChatboxProps> = ({ setNewRenderImage }) => {
               // Tokens are flowing; schedule enable when they stop
               scheduleEnableSubmit();
             } else if (type === 'images') {
-              const images = Object.entries(payload).map(([productName, productUrl]) => ({ 
-                productUrl, 
-                productName 
-              }));
-              
-              setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
-                  role: 'image_row',
-                  content: images,
+              const images = Object.entries(payload).map(([productName, productUrl]) => {
+                let resolvedUrl = String(productUrl);
+                if (resolvedUrl && !resolvedUrl.startsWith('http') && !resolvedUrl.startsWith('data:') && !resolvedUrl.startsWith('/images/')) {
+                  resolvedUrl = `/images/${resolvedUrl}`;
+                }
+                return {
+                  productUrl: resolvedUrl,
+                  productName
                 };
-                return updated;
               });
+
+              if (setRetrievedProducts) {
+                setRetrievedProducts(images);
+              }
             }
 
             // Update assistant message
@@ -348,29 +386,35 @@ const Chatbox: React.FC<ChatboxProps> = ({ setNewRenderImage }) => {
   };
 
   const handleReset = async () => {
-    setMessages([]);
-    setImage("");
-    setPreviewImage("");
-    setNewRenderImage("");
-    sessionStorage.removeItem('shopping_user_id');
+    if (isResetting.current) return;
+    isResetting.current = true;
+    try {
+      setMessages([]);
+      setImage("");
+      setPreviewImage("");
+      setNewRenderImage("");
+      sessionStorage.removeItem('shopping_user_id');
 
-    // Add welcome messages
-    addMessage(
-      "system",
-      "You are an advanced AI assistant helps customers on a Retail e-commerce website. You help answer questions for customers about products. Start the conversation by asking a couple of questions to clarify what the user is looking for. Use emojis but do not use too many. Structure your output using Markdown but do not use nested indentations.",
-      ""
-    );
-    
-    await sleep(1000);
-    addMessage("assistant", "", "");
-    
-    await sleep(1000);
-    const introduction = "Hello! 👋 I'm your dedicated Shopping Assistant created by NVIDIA. You can ask me anything—from finding the perfect item to learning more about product care.\n\nHere are some questions you could ask me:\n\n• Do you have any summer skirts?\n• Does the [product name] require dry cleaning?\n• Do you have any shoes like this? (upload an image)\n• Great! Add it to my cart";
-    
-    const words = introduction.split(" ");
-    for (const word of words) {
-      await sleep(40);
-      updateLastMessage(word + " ");
+      // Add welcome messages
+      addMessage(
+        "system",
+        "You are an advanced AI assistant helps customers on a Retail e-commerce website. You help answer questions for customers about products. Start the conversation by asking a couple of questions to clarify what the user is looking for. Use emojis but do not use too many. Structure your output using Markdown but do not use nested indentations.",
+        ""
+      );
+      
+      await sleep(1000);
+      addMessage("assistant", "", "");
+      
+      await sleep(1000);
+      const introduction = "Hello! 👋 I'm your dedicated Shopping Assistant developed by Avanzare. You can ask me anything—from finding the perfect item to learning more about product care.\n\nHere are some questions you could ask me:\n\n• Do you have any summer skirts?\n• Does the [product name] require dry cleaning?\n• Do you have any shoes like this? (upload an image)\n• Great! Add it to my cart";
+      
+      const words = introduction.split(" ");
+      for (const word of words) {
+        await sleep(40);
+        updateLastMessage(word + " ");
+      }
+    } finally {
+      isResetting.current = false;
     }
   };
 
@@ -464,7 +508,7 @@ const Chatbox: React.FC<ChatboxProps> = ({ setNewRenderImage }) => {
             <div className="button-class">
               <SendIcon
                 sx={{ color: isLoading ? "lightgray" : "#76B900", cursor: isLoading ? "not-allowed" : "pointer" }}
-                onClick={isLoading ? () => {} : handleSendMessage}
+                onClick={isLoading ? () => {} : () => handleSendMessage()}
                 fontSize="large"
               />
             </div>
@@ -510,10 +554,10 @@ const Chatbox: React.FC<ChatboxProps> = ({ setNewRenderImage }) => {
             </FormGroup>
           </div>
 
-          {/* Powered by NVIDIA */}
-          <div className="flex relative flex-row items-center justify-center bg-white pb-[15px]">
-            <h3 className="text-[16px]">Powered by</h3>
-            <img src={logo} alt="NVIDIA" className="h-14" />
+          {/* Powered by Avanzare AI */}
+          <div className="flex relative flex-row items-center justify-center bg-white pb-[15px] gap-2">
+            <h3 className="text-[16px] text-gray-500 font-normal">Powered by</h3>
+            <span className="text-[16px] text-[#76b900] font-bold">Avanzare AI</span>
           </div>
         </div>
 

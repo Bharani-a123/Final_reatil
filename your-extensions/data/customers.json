@@ -1,0 +1,114 @@
+[
+  {
+    "customer_id": "cust_001",
+    "name": "Sarah Connor",
+    "email": "sarah.connor@sky.net",
+    "loyalty_tier": "Gold",
+    "loyalty_points": 750,
+    "purchase_history": [
+      "Lovable Women Spice White Bra",
+      "Enamor Navy Blue Smooth Bra"
+    ],
+    "channel_preference": "mobile"
+  },
+  {
+    "customer_id": "cust_002",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "loyalty_tier": "Silver",
+    "loyalty_points": 350,
+    "purchase_history": [
+      "Jockey ELANCE Men Grey Melange Brief 1008"
+    ],
+    "channel_preference": "web"
+  },
+  {
+    "customer_id": "cust_003",
+    "name": "Bruce Wayne",
+    "email": "bruce@waynecorp.com",
+    "loyalty_tier": "Platinum",
+    "loyalty_points": 5000,
+    "purchase_history": [
+      "Avirate Black Bra",
+      "Bwitch Beige Full-Coverage Bra BW335"
+    ],
+    "channel_preference": "kiosk"
+  },
+  {
+    "customer_id": "cust_004",
+    "name": "Peter Parker",
+    "email": "peter.parker@dailybugle.com",
+    "loyalty_tier": "Bronze",
+    "loyalty_points": 120,
+    "purchase_history": [
+      "Lovable Cotton Essensuals Skin Coloured Bra"
+    ],
+    "channel_preference": "whatsapp"
+  },
+  {
+    "customer_id": "cust_005",
+    "name": "Clark Kent",
+    "email": "clark.kent@dailyplanet.com",
+    "loyalty_tier": "None",
+    "loyalty_points": 0,
+    "purchase_history": [],
+    "channel_preference": "web"
+  },
+  {
+    "customer_id": "cust_006",
+    "name": "Diana Prince",
+    "email": "diana@themyscira.gov",
+    "loyalty_tier": "Gold",
+    "loyalty_points": 1200,
+    "purchase_history": [
+      "Amante Pink Printed Full-Coverage Bra BGTC01",
+      "Amante Off-White Full-Coverage Bra BCSB02"
+    ],
+    "channel_preference": "mobile"
+  },
+  {
+    "customer_id": "cust_007",
+    "name": "Tony Stark",
+    "email": "tony@starkindustries.com",
+    "loyalty_tier": "Platinum",
+    "loyalty_points": 8500,
+    "purchase_history": [
+      "Park Avenue Men Navy Blue Swank Brief"
+    ],
+    "channel_preference": "mobile"
+  },
+  {
+    "customer_id": "cust_008",
+    "name": "Barry Allen",
+    "email": "barry.allen@ccpd.gov",
+    "loyalty_tier": "Silver",
+    "loyalty_points": 450,
+    "purchase_history": [
+      "Jockey ELANCE Men White Hi-Cut Brief 1008"
+    ],
+    "channel_preference": "whatsapp"
+  },
+  {
+    "customer_id": "cust_009",
+    "name": "Selina Kyle",
+    "email": "selina@cat.org",
+    "loyalty_tier": "Gold",
+    "loyalty_points": 950,
+    "purchase_history": [
+      "Enamor Black Bra",
+      "Avirate Black Bra"
+    ],
+    "channel_preference": "kiosk"
+  },
+  {
+    "customer_id": "cust_010",
+    "name": "Hal Jordan",
+    "email": "green.lantern@oa.org",
+    "loyalty_tier": "Bronze",
+    "loyalty_points": 180,
+    "purchase_history": [
+      "Lovable Women Spice Blue Bra"
+    ],
+    "channel_preference": "web"
+  }
+]

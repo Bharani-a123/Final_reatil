@@ -160,7 +160,7 @@ async def process_query_timing(request: QueryRequest):
         
         logger.info(f"chain-server | /query/timing | Collected state: {out_state_dict}")
 
-        total_time = end_time - start_time
+        total_time = max(end_time - start_time, 0.001)
 
         # Create response with timing information
         response = QueryResponse(

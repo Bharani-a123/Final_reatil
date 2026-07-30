@@ -28,10 +28,17 @@ export interface ImageRowContent extends Array<ImageContent> {}
 
 export interface ChatboxProps {
   setNewRenderImage: (value: string) => void;
+  setRetrievedProducts?: (value: any[]) => void;
+  chatTriggerRef?: React.MutableRefObject<((msg: string) => void) | null>;
+  isCartView?: boolean;
+  setIsCartView?: (value: boolean) => void;
 }
 
 export interface ApparelProps {
   newRenderImage: string;
+  retrievedProducts?: any[];
+  onRemoveProduct?: (name: string) => void;
+  isCartView?: boolean;
 }
 
 export interface SafeHTMLProps {

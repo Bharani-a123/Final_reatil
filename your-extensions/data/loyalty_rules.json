@@ -1,0 +1,48 @@
+{
+  "coupons": [
+    {
+      "code": "WELCOME10",
+      "discount_percentage": 10.0,
+      "min_order_value": 0.0
+    },
+    {
+      "code": "SAVEMORE20",
+      "discount_percentage": 20.0,
+      "min_order_value": 100.0
+    }
+  ],
+  "points_redemption": {
+    "points_to_dollar_ratio": 100,
+    "dollar_value_per_unit": 1.0
+  },
+  "points_accrual": {
+    "points_per_dollar_spent": 1
+  },
+  "tiers": [
+    {
+      "name": "Platinum",
+      "automatic_discount_percentage": 10.0,
+      "free_shipping": true
+    },
+    {
+      "name": "Gold",
+      "automatic_discount_percentage": 5.0,
+      "free_shipping": true
+    },
+    {
+      "name": "Silver",
+      "automatic_discount_percentage": 0.0,
+      "free_shipping": true
+    },
+    {
+      "name": "Bronze",
+      "automatic_discount_percentage": 0.0,
+      "free_shipping": false
+    },
+    {
+      "name": "None",
+      "automatic_discount_percentage": 0.0,
+      "free_shipping": false
+    }
+  ]
+}

@@ -71,7 +71,20 @@ const ChatMessage = React.forwardRef<HTMLDivElement, ChatMessageProps>(
       if (content === "loader") {
         return (
           <div ref={ref} style={{ display: "inline-flex", alignItems: "flex-start", gap: 8, marginTop: 10 }}>
-            <img src={nvinfo} alt="Assistant" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
+            <div style={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              backgroundColor: "#76b900",
+              color: "#FFFFFF",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: "bold",
+              fontSize: "14px",
+              fontFamily: "sans-serif",
+              flexShrink: 0
+            }}>A</div>
             <div className={`messages__item messages__item--${role}`}>
               <Loader />
             </div>
@@ -92,7 +105,20 @@ const ChatMessage = React.forwardRef<HTMLDivElement, ChatMessageProps>(
 
       return (
         <div ref={ref} style={{ display: "inline-flex", alignItems: "flex-start", gap: 8, marginTop: 10 }}>
-          <img src={nvinfo} alt="Assistant" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
+          <div style={{
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            backgroundColor: "#76b900",
+            color: "#FFFFFF",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: "bold",
+            fontSize: "14px",
+            fontFamily: "sans-serif",
+            flexShrink: 0
+          }}>A</div>
           <div className={`messages__item messages__item--${role}`}>
             <SafeHTML html={processedContent} />
           </div>
@@ -100,56 +126,14 @@ const ChatMessage = React.forwardRef<HTMLDivElement, ChatMessageProps>(
       );
     }
 
-    // Image message (single product)
+    // Image message (single product) - Hidden inside chat timeline as requested
     if (role === "image") {
-      const [imagePath, url, productName, productRating] = (content as string).split("|");
-      
-      if (imagePath && url && productName && productRating) {
-        return (
-          <div className={`messages__item messages__item--${role}`} ref={ref}>
-            <img className="messages__item--image-img" src={imagePath} alt={productName} />
-            <div className="messages__item--image-box">
-              <div className="messages__item--image-stars">
-                {productName}
-              </div>
-            </div>
-          </div>
-        );
-      }
+      return null;
     }
 
-    // Image row message (multiple products)
+    // Image row message (multiple products) - Hidden inside chat timeline as requested
     if (role === "image_row") {
-      const images = content as ImageRowContent;
-      
-      return (
-        <div style={{ 
-          width: "100%", 
-          height: "auto", 
-          display: "inline-flex", 
-          flexFlow: "row wrap" 
-        }}>
-          {images.map((image: ImageContent, index: number) => (
-            <div key={index} className={`messages__item messages__item--image`} ref={ref}>
-              <img 
-                className="messages__item--image-img-rowitem" 
-                src={image.productUrl} 
-                alt={image.productName}
-              />
-              <div className="messages__item--image-box">
-                <div 
-                  className="messages__item--image-stars" 
-                  style={{
-                    maxWidth: isFashionMode() ? "200px" : "none"
-                  }}
-                >
-                  {image.productName}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
+      return null;
     }
 
     // User uploaded image

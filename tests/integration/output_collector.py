@@ -32,7 +32,7 @@ for filename in yaml_files:
     output_filename = filename.replace('.yaml', '.results.yaml').replace('.yml', '.results.yml')
     output_path = os.path.join(OUTPUT_DIRECTORY, output_filename)
 
-    with open(input_path, 'r') as f:
+    with open(input_path, 'r', encoding='utf-8') as f:
         query_set = yaml.safe_load(f)
 
     set_name = query_set.get('set_name', filename)
@@ -64,7 +64,7 @@ for filename in yaml_files:
         time.sleep(REQUEST_DELAY)
 
     # Save individual result
-    with open(output_path, 'w') as f:
+    with open(output_path, 'w', encoding='utf-8') as f:
         yaml.dump({
             "set_name": set_name,
             "results": results

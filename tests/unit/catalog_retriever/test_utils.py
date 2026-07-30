@@ -104,8 +104,9 @@ class TestImagePathToBase64:
 
         original_open = open
 
-        def _fake_open(path: str, mode: str = "r", *args: Any, **kwargs: Any):
-            if path == expected_path:
+        def _fake_open(path: Any, mode: str = "r", *args: Any, **kwargs: Any):
+            norm_path = str(path).replace("\\", "/")
+            if norm_path == expected_path:
                 return original_open(real_path, mode, *args, **kwargs)
             return original_open(path, mode, *args, **kwargs)
 
@@ -130,8 +131,9 @@ class TestImagePathToBase64:
 
         original_open = open
 
-        def _fake_open(path: str, mode: str = "r", *args: Any, **kwargs: Any):
-            if path.startswith("/app/shared/"):
+        def _fake_open(path: Any, mode: str = "r", *args: Any, **kwargs: Any):
+            norm_path = str(path).replace("\\", "/")
+            if norm_path.startswith("/app/shared/"):
                 return original_open(real_path, mode, *args, **kwargs)
             return original_open(path, mode, *args, **kwargs)
 

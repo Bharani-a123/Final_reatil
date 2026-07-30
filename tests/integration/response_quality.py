@@ -115,9 +115,9 @@ if __name__ == "__main__":
     assert query_files == res_files, "Mismatch between query and result filenames!"
 
     for filename in query_files:
-        with open(os.path.join(QUERY_DIR, filename), 'r') as qf:
+        with open(os.path.join(QUERY_DIR, filename), 'r', encoding='utf-8') as qf:
             query_data = yaml.safe_load(qf)
-        with open(os.path.join(RES_DIR, filename), 'r') as rf:
+        with open(os.path.join(RES_DIR, filename), 'r', encoding='utf-8') as rf:
             res_data = yaml.safe_load(rf)
 
         queries = query_data["queries"]
@@ -148,6 +148,6 @@ if __name__ == "__main__":
             results_per_file.append(result_entry)
 
         # Write YAML output per file
-        with open(f"{OUTPUT_PATH}/{filename}", 'w') as out_file:
+        with open(f"{OUTPUT_PATH}/{filename}", 'w', encoding='utf-8') as out_file:
             yaml.dump(results_per_file, out_file, sort_keys=False, allow_unicode=True)
 

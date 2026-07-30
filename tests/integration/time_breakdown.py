@@ -12,7 +12,7 @@ def read_all_timings(directory):
     for filename in os.listdir(directory):
         if filename.endswith('.yaml'):
             path = os.path.join(directory, filename)
-            with open(path, 'r') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 content = yaml.safe_load(f)
                 set_name = content.get("set_name", filename)
                 timings = []

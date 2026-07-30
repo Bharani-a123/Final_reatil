@@ -16,12 +16,32 @@ import Footer from "./components/Footer";
 
 const App: React.FC = () => {
   const [newRenderImage, setNewRenderImage] = useState<string>("");
+  const [retrievedProducts, setRetrievedProducts] = useState<any[]>([]);
+  const [isCartView, setIsCartView] = useState<boolean>(false);
+  const chatTriggerRef = React.useRef<((msg: string) => void) | null>(null);
+
+  const handleRemoveProduct = (productName: string) => {
+    if (chatTriggerRef.current) {
+      chatTriggerRef.current(`remove ${productName} from cart`);
+    }
+  };
 
   return (
     <div className="bg-[#FFFFFF] flex flex-col h-screen w-screen">
       <Navbar />
-      <Apparel newRenderImage={newRenderImage} />
-      <Chatbox setNewRenderImage={setNewRenderImage} />
+      <Apparel 
+        newRenderImage={newRenderImage} 
+        retrievedProducts={retrievedProducts} 
+        isCartView={isCartView}
+        onRemoveProduct={handleRemoveProduct}
+      />
+      <Chatbox 
+        setNewRenderImage={setNewRenderImage} 
+        setRetrievedProducts={setRetrievedProducts} 
+        isCartView={isCartView}
+        setIsCartView={setIsCartView}
+        chatTriggerRef={chatTriggerRef}
+      />
       <Footer />
       <ToastContainer position="top-right" />
     </div>

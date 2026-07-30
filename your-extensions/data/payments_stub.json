@@ -1,0 +1,44 @@
+[
+  {
+    "payment_method": "card",
+    "card_number_suffix": "4242",
+    "holder_name": "Sarah Connor",
+    "status": "APPROVED",
+    "error_message": null
+  },
+  {
+    "payment_method": "card",
+    "card_number_suffix": "9999",
+    "holder_name": "Sarah Connor",
+    "status": "DECLINED_INSUFFICIENT_FUNDS",
+    "error_message": "Card declined: Insufficient funds. Please try another card or UPI."
+  },
+  {
+    "payment_method": "upi",
+    "upi_id": "sarah@upi",
+    "holder_name": "Sarah Connor",
+    "status": "APPROVED",
+    "error_message": null
+  },
+  {
+    "payment_method": "upi",
+    "upi_id": "tony@upi",
+    "holder_name": "Tony Stark",
+    "status": "APPROVED",
+    "error_message": null
+  },
+  {
+    "payment_method": "gift_card",
+    "gift_card_code": "GIFT_100",
+    "balance": 100.0,
+    "status": "APPROVED",
+    "error_message": null
+  },
+  {
+    "payment_method": "gift_card",
+    "gift_card_code": "GIFT_EXPIRED",
+    "balance": 0.0,
+    "status": "DECLINED_EXPIRED",
+    "error_message": "Gift card is expired."
+  }
+]
