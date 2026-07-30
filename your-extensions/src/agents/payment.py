@@ -212,6 +212,27 @@ class PaymentAgent:
             state.payment_attempts += 1
             return "Secure payment gateway is currently unconfigured. Please check payment credentials."
 
+    def _save_session_state(self, state: ExtendedState):
+        from ..database import SessionLocal, SessionState
+        db = SessionLocal()
+        try:
+            session = db.query(SessionState).filter(SessionState.user_id == state.user_id).first()
+            if not session:
+                session = SessionState(user_id=state.user_id)
+                db.add(session)
+            session.tracking_number = state.tracking_number
+            session.razorpay_link_id = state.razorpay_link_id
+            session.razorpay_short_url = state.razorpay_short_url
+            session.fulfillment_method = state.fulfillment_method
+            session.delivery_address = state.delivery_address
+            session.delivery_slot = state.delivery_slot
+            session.payment_status = state.payment_status
+            db.commit()
+        except Exception as e:
+            logger.error(f"Failed to save SessionState: {e}")
+        finally:
+            db.close()
+
     def invoke(self, state: ExtendedState, verbose: bool = True) -> ExtendedState:
         start = time.monotonic()
         logger.info(f"PaymentAgent.invoke() | Query: {state.query}")
@@ -289,4 +310,5 @@ class PaymentAgent:
         end = time.monotonic()
         output_state.context = output_state.context + f"\nAgent Response: {output_state.response}"
         output_state.add_timing("payment", end - start)
+        self._save_session_state(output_state)
         return output_state

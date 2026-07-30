@@ -85,12 +85,57 @@ from .agents.fulfillment import FulfillmentAgent
 from .agents.loyalty import LoyaltyAgent
 from .agents.support import SupportAgent
 
+def save_session_state(state: ExtendedState):
+    from .database import SessionLocal, SessionState
+    db = SessionLocal()
+    try:
+        session = db.query(SessionState).filter(SessionState.user_id == state.user_id).first()
+        if not session:
+            session = SessionState(user_id=state.user_id)
+            db.add(session)
+        session.tracking_number = state.tracking_number
+        session.razorpay_link_id = state.razorpay_link_id
+        session.razorpay_short_url = state.razorpay_short_url
+        session.fulfillment_method = state.fulfillment_method
+        session.delivery_address = state.delivery_address
+        session.delivery_slot = state.delivery_slot
+        session.payment_status = state.payment_status
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to save SessionState: {e}")
+    finally:
+        db.close()
+
 class ExtendedPlannerAgent(PlannerAgent):
     def __init__(self, config):
         super().__init__(config)
         self.chat_kwargs = {}
         if "nvidia" in config.llm_port or "nemotron" in config.llm_name:
             self.chat_kwargs["extra_body"] = {"chat_template_kwargs": {"enable_thinking": False}}
+
+    def invoke(self, state: ExtendedState, verbose: bool = True) -> ExtendedState:
+        from .database import SessionLocal, SessionState
+        db = SessionLocal()
+        try:
+            session = db.query(SessionState).filter(SessionState.user_id == state.user_id).first()
+            if session:
+                state.tracking_number = session.tracking_number
+                state.razorpay_link_id = session.razorpay_link_id
+                state.razorpay_short_url = session.razorpay_short_url
+                state.fulfillment_method = session.fulfillment_method
+                state.delivery_address = session.delivery_address
+                state.delivery_slot = session.delivery_slot
+                state.payment_status = session.payment_status
+            else:
+                session = SessionState(user_id=state.user_id)
+                db.add(session)
+                db.commit()
+        except Exception as e:
+            logger.error(f"Failed to load SessionState: {e}")
+        finally:
+            db.close()
+            
+        return super().invoke(state, verbose=verbose)
 
     def _call_llm_for_routing(self, query: str, has_image: bool = False) -> str:
         q_lower = query.lower()
@@ -362,6 +407,7 @@ class ExtendedChatterAgent(ChatterAgent):
                 state.response = "Your current cart contains:\n" + "\n".join(lines)
             
             state.context = f"{state.context}\n{state.response}"
+            save_session_state(state)
             from langgraph.config import get_stream_writer
             writer = get_stream_writer()
             writer(f"{json.dumps({'type' : 'images', 'payload' : state.retrieved, 'timestamp' : time.time()})}")
@@ -372,6 +418,7 @@ class ExtendedChatterAgent(ChatterAgent):
             logger.info("ChatterAgent | Running in mock mode.")
             state.response = state.response or "I am here to help you shop. What are you looking for?"
             state.context = state.context + f"\nChatter Response: {state.response}"
+            save_session_state(state)
             return state
 
         # Explicit async invoke implementation
@@ -466,6 +513,7 @@ class ExtendedChatterAgent(ChatterAgent):
         state.response = full_response
         state.context = f"{state.context}\n{full_response}"
         state.timings["chatter"] = time.monotonic() - start
+        save_session_state(state)
         return state
 
 class ExtendedSummaryAgent(SummaryAgent):

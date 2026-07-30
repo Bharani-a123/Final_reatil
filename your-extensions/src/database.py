@@ -64,6 +64,17 @@ class CouponRule(Base):
     discount_percentage = Column(Float, default=0.0)
     min_order_value = Column(Float, default=0.0)
 
+class SessionState(Base):
+    __tablename__ = "session_states"
+    user_id = Column(Integer, primary_key=True, index=True)
+    tracking_number = Column(String, nullable=True)
+    razorpay_link_id = Column(String, nullable=True)
+    razorpay_short_url = Column(String, nullable=True)
+    fulfillment_method = Column(String, nullable=True)
+    delivery_address = Column(String, nullable=True)
+    delivery_slot = Column(String, nullable=True)
+    payment_status = Column(String, default="unpaid")
+
 # Create all tables
 Base.metadata.create_all(bind=engine)
 

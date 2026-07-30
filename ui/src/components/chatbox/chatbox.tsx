@@ -63,7 +63,10 @@ const Chatbox: React.FC<ChatboxProps> = ({
   const [isGuardrailsOn, setIsGuardrailsOn] = useState(config.features.guardrails.defaultState);
   const [image, setImage] = useState("");
   const [previewImage, setPreviewImage] = useState("");
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>(() => {
+    const saved = sessionStorage.getItem('shopping_chat_messages');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isLoading, setIsLoading] = useState(false);
   const messageRefs = useRef<React.RefObject<HTMLDivElement>[]>([]);
   const [lastAssistantIndex, setLastAssistantIndex] = useState<number | null>(null);
@@ -93,6 +96,10 @@ const Chatbox: React.FC<ChatboxProps> = ({
       }, 1500);
     }
   }, []);
+
+  React.useEffect(() => {
+    sessionStorage.setItem('shopping_chat_messages', JSON.stringify(messages));
+  }, [messages]);
 
   // Utility functions
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -394,6 +401,7 @@ const Chatbox: React.FC<ChatboxProps> = ({
       setPreviewImage("");
       setNewRenderImage("");
       sessionStorage.removeItem('shopping_user_id');
+      sessionStorage.removeItem('shopping_chat_messages');
 
       // Add welcome messages
       addMessage(
@@ -438,7 +446,7 @@ const Chatbox: React.FC<ChatboxProps> = ({
   }, [isOpen]);
 
   useEffect(() => {
-    if (hasBeenOpened) {
+    if (hasBeenOpened && messages.length === 0) {
       handleReset();
     }
   }, [hasBeenOpened]);
