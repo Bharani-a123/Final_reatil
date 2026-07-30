@@ -37,3 +37,4 @@ class ExtendedState(CoreState):
     # Razorpay Integration Fields
     razorpay_link_id: Optional[str] = Field(default=None, description="The Razorpay Payment Link ID")
     razorpay_short_url: Optional[str] = Field(default=None, description="The Razorpay short URL for payment link")
+    order_status: Optional[str] = Field(default=None, description="Status of the placed order (e.g. placed, cancelled)")

@@ -227,6 +227,7 @@ class PaymentAgent:
             session.delivery_address = state.delivery_address
             session.delivery_slot = state.delivery_slot
             session.payment_status = state.payment_status
+            session.order_status = state.order_status
             db.commit()
         except Exception as e:
             logger.error(f"Failed to save SessionState: {e}")

@@ -74,6 +74,7 @@ class SessionState(Base):
     delivery_address = Column(String, nullable=True)
     delivery_slot = Column(String, nullable=True)
     payment_status = Column(String, default="unpaid")
+    order_status = Column(String, nullable=True)
 
 # Create all tables
 Base.metadata.create_all(bind=engine)

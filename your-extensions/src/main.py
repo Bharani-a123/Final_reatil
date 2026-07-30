@@ -100,6 +100,7 @@ def save_session_state(state: ExtendedState):
         session.delivery_address = state.delivery_address
         session.delivery_slot = state.delivery_slot
         session.payment_status = state.payment_status
+        session.order_status = state.order_status
         db.commit()
     except Exception as e:
         logger.error(f"Failed to save SessionState: {e}")
@@ -126,6 +127,7 @@ class ExtendedPlannerAgent(PlannerAgent):
                 state.delivery_address = session.delivery_address
                 state.delivery_slot = session.delivery_slot
                 state.payment_status = session.payment_status
+                state.order_status = session.order_status
             else:
                 session = SessionState(user_id=state.user_id)
                 db.add(session)
@@ -141,7 +143,7 @@ class ExtendedPlannerAgent(PlannerAgent):
         q_lower = query.lower()
 
         # 1. Deterministic/Keyword-based Routing Rules (High accuracy overrides)
-        if any(w in q_lower for w in ["track", "status", "return", "refund", "exchange", "ref_", "order"]):
+        if any(w in q_lower for w in ["track", "status", "return", "refund", "exchange", "ref_", "order", "cancel"]):
             return "support"
         if any(w in q_lower for w in ["coupon", "discount", "loyalty", "points", "redeem", "rewards"]):
             return "loyalty"

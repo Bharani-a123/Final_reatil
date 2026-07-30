@@ -152,3 +152,21 @@ request_order_return_function = {
         }
     }
 }
+
+cancel_order_function = {
+    "type": "function",
+    "function": {
+        "name": "cancel_order",
+        "description": "Cancels a previously placed order using its reference ID.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "order_reference": {
+                    "type": "string",
+                    "description": "The order reference ID (e.g. REF_123456)."
+                }
+            },
+            "required": ["order_reference"]
+        }
+    }
+}

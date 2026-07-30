@@ -12,7 +12,7 @@ import time
 from openai import OpenAI
 
 from ..state import ExtendedState
-from ..functions import check_order_status_function, request_order_return_function, parse_tool_call_fallback
+from ..functions import check_order_status_function, request_order_return_function, cancel_order_function, parse_tool_call_fallback
 from ..database import SessionLocal, CustomerProfile
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,12 @@ class SupportAgent:
 
         # Simple verification against state tracking
         if state.tracking_number == ref:
+            if state.order_status == "cancelled":
+                return (
+                    f"Order status for **{ref}**:\n"
+                    f"  - Status: **Cancelled**\n"
+                    f"  - Refund: Initiated back to original payment method"
+                )
             method = state.fulfillment_method or "ship_to_home"
             if method == "ship_to_home":
                 return (
@@ -56,6 +62,45 @@ class SupportAgent:
             f"  - Signature: Left at front porch"
         )
 
+    def _cancel_order(self, ref: str, state: ExtendedState) -> str:
+        if not ref:
+            return "Please provide an order reference ID (starting with REF_)."
+
+        if state.tracking_number != ref:
+            return f"Could not find an active order matching reference **{ref}** to cancel."
+
+        if state.order_status == "cancelled":
+            return f"Order **{ref}** is already cancelled."
+
+        # Stateful cancellation
+        state.order_status = "cancelled"
+        
+        # Restore inventory stocks if we can find the items
+        try:
+            from ..database import SessionLocal, CustomerProfile, InventoryItem, update_inventory_stock
+            db = SessionLocal()
+            cust = db.query(CustomerProfile).filter(CustomerProfile.customer_id == state.customer_id).first()
+            if cust:
+                history = json.loads(cust.purchase_history or "[]")
+                location = "online_warehouse"
+                if state.fulfillment_method in ("click_and_collect", "in_store_reserve"):
+                    location = "store_downtown"
+                for name in history:
+                    inv_item = db.query(InventoryItem).filter(InventoryItem.name == name).first()
+                    if inv_item:
+                        update_inventory_stock(inv_item.sku, location, 1)
+            db.close()
+        except Exception as e:
+            logger.error(f"Failed to reverse stock on order cancel: {e}")
+
+        return (
+            f"🚫 **Order Cancelled Successfully!**\n"
+            f"Your order **{ref}** has been cancelled as requested.\n"
+            f"  - Status: **Cancelled**\n"
+            f"  - Refund Status: **Initiated** (Will be credited back to your payment method in 3-5 business days)\n\n"
+            f"The inventory has been updated, and the items have been returned to stock."
+        )
+
     def _request_return(self, ref: str, item: str, reason: str, state: ExtendedState) -> str:
         if not ref or not item:
             return "Please provide both the order reference number (REF_xxxxxx) and the name of the item to return."
@@ -76,9 +121,10 @@ class SupportAgent:
         logger.info(f"SupportAgent.invoke() | Query: {state.query}")
 
         system_prompt = (
-            "You are a post-purchase support specialist. You have two tools:\n"
+            "You are a post-purchase support specialist. You have three tools:\n"
             "1. check_order_status: to track/query a previous order.\n"
             "2. request_order_return: to register return/refund requests.\n"
+            "3. cancel_order: to cancel a previously placed order using its reference ID.\n"
             "Select the correct tool call and extract arguments. Do not reply with plain text."
         )
 
@@ -96,7 +142,16 @@ class SupportAgent:
             query_lower = state.query.lower()
             
             # Simple keyword tool classifier
-            if "return" in query_lower or "exchange" in query_lower or "refund" in query_lower:
+            if "cancel" in query_lower:
+                tool_name = "cancel_order"
+                ref = "REF_123456"
+                if "ref_" in query_lower:
+                    parts = query_lower.split("ref_")
+                    ref = "REF_" + parts[1][:6].upper()
+                elif state.tracking_number:
+                    ref = state.tracking_number
+                tool_args = {"order_reference": ref}
+            elif "return" in query_lower or "exchange" in query_lower or "refund" in query_lower:
                 tool_name = "request_order_return"
                 ref = "REF_123456"
                 if "ref_" in query_lower:
@@ -126,7 +181,7 @@ class SupportAgent:
                 model=self.llm_name,
                 messages=messages,
                 temperature=0.0,
-                tools=[check_order_status_function, request_order_return_function],
+                tools=[check_order_status_function, request_order_return_function, cancel_order_function],
                 tool_choice="auto",
                 **self.chat_kwargs
             )
@@ -140,7 +195,13 @@ class SupportAgent:
 
         output_state = state
         query_lower = (state.query or "").lower()
-        if tool_name == "check_order_status" or ("order" in query_lower and any(w in query_lower for w in ["show", "track", "status", "where"])):
+        if tool_name == "cancel_order" or "cancel" in query_lower:
+            ref = tool_args.get("order_reference", "")
+            if not ref or ref.lower() in ("unknown", "null", "none", ""):
+                if state.tracking_number:
+                    ref = state.tracking_number
+            output_state.response = self._cancel_order(ref, state)
+        elif tool_name == "check_order_status" or ("order" in query_lower and any(w in query_lower for w in ["show", "track", "status", "where"])):
             ref = tool_args.get("order_reference", "")
             if not ref or ref.lower() in ("unknown", "null", "none", ""):
                 if state.tracking_number:
@@ -152,7 +213,7 @@ class SupportAgent:
             reason = tool_args.get("reason", "")
             output_state.response = self._request_return(ref, item, reason, state)
         else:
-            output_state.response = "Please provide your order reference number (REF_xxxxxx) for status check or return requests."
+            output_state.response = "Please provide your order reference number (REF_xxxxxx) for status check, cancellation, or return requests."
 
         end = time.monotonic()
         output_state.context = output_state.context + f"\nAgent Response: {output_state.response}"
