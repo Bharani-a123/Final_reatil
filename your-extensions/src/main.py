@@ -321,7 +321,7 @@ def find_fuzzy_catalog_match(query: str, catalog_names: list, threshold: float =
     return None
 
 class ExtendedCartAgent(CartAgent):
-    async def invoke(self, state: ExtendedState, verbose: bool = True) -> ExtendedState:
+    def invoke(self, state: ExtendedState, verbose: bool = True) -> ExtendedState:
         query = state.query or ""
         is_remove = "remove" in query.lower() or "delete" in query.lower() or "take out" in query.lower()
         resolved_names = resolve_indices(query, state, is_remove=is_remove)
@@ -387,7 +387,7 @@ class ExtendedCartAgent(CartAgent):
             output_state.next_agent = "cart"
             return output_state
 
-        return await super().invoke(state, verbose=verbose)
+        return super().invoke(state, verbose=verbose)
 
 class ExtendedChatterAgent(ChatterAgent):
     def __init__(self, config):
