@@ -109,6 +109,11 @@ const Apparel: React.FC<ApparelProps> = ({ newRenderImage, retrievedProducts = [
                 <div className="text-[14px] font-bold text-[#202020] line-clamp-2 min-h-[40px] flex-grow">
                   {product.productName}
                 </div>
+                {product.price !== undefined && product.price !== null && Number(product.price) > 0 && (
+                  <div className="text-[15px] font-extrabold text-[#76b900] mt-1">
+                    ₹{Number(product.price).toLocaleString('en-IN')}
+                  </div>
+                )}
                 {isCartView && onRemoveProduct && (
                   <button
                     onClick={() => onRemoveProduct(product.productName)}

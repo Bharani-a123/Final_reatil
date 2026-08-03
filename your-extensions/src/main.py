@@ -79,6 +79,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Load product prices from CSV on startup
+PRODUCT_PRICES = {}
+try:
+    import csv
+    csv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "selected_dataset", "products.csv")
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            PRODUCT_PRICES[row["name"].strip()] = float(row["price"] or 0)
+    logger.info(f"Loaded {len(PRODUCT_PRICES)} product prices for UI display.")
+except Exception as e:
+    logger.error(f"Failed to load product prices on startup: {e}")
+
 from .agents.inventory import InventoryAgent
 from .agents.payment import PaymentAgent
 from .agents.fulfillment import FulfillmentAgent
@@ -194,7 +207,20 @@ class ExtendedRetrieverAgent(RetrieverAgent):
             self.k_value = 8
         else:
             self.k_value = self.config.top_k_retrieve
-        return await super().invoke(state, verbose=verbose)
+        state = await super().invoke(state, verbose=verbose)
+        
+        # Enrich retrieved catalog products with pricing metadata
+        if state.retrieved:
+            new_retrieved = {}
+            for name, img in state.retrieved.items():
+                price = PRODUCT_PRICES.get(name.strip(), 0.0)
+                if isinstance(img, dict):
+                    new_retrieved[name] = img
+                else:
+                    new_retrieved[name] = {"url": img, "price": price}
+            state.retrieved = new_retrieved
+            
+        return state
 
 def resolve_indices(query: str, state: ExtendedState, is_remove: bool = False) -> list[str]:
     import re
@@ -272,6 +298,28 @@ def resolve_indices(query: str, state: ExtendedState, is_remove: bool = False) -
                 
     return resolved_names
 
+def find_fuzzy_catalog_match(query: str, catalog_names: list, threshold: float = 0.5) -> Optional[str]:
+    import re
+    q_words = set(re.findall(r'\b\w+\b', query.lower()))
+    if not q_words:
+        return None
+        
+    best_match = None
+    best_score = 0.0
+    for name in catalog_names:
+        n_words = set(re.findall(r'\b\w+\b', name.lower()))
+        if not n_words:
+            continue
+        intersection = q_words & n_words
+        score = len(intersection) / len(n_words)
+        if score > best_score:
+            best_score = score
+            best_match = name
+            
+    if best_score >= threshold:
+        return best_match
+    return None
+
 class ExtendedCartAgent(CartAgent):
     async def invoke(self, state: ExtendedState, verbose: bool = True) -> ExtendedState:
         query = state.query or ""
@@ -287,6 +335,12 @@ class ExtendedCartAgent(CartAgent):
                         if item_name.lower() in query.lower():
                             resolved_names = [item_name]
                             break
+                    if not resolved_names:
+                        # Fuzzy match cart items
+                        cart_names = [item.get("item", "") for item in state.cart.contents if item.get("item")]
+                        match = find_fuzzy_catalog_match(query, cart_names, threshold=0.5)
+                        if match:
+                            resolved_names = [match]
             else:
                 # Direct match catalog items
                 from chain_server.src.cart import CartAgent
@@ -295,6 +349,11 @@ class ExtendedCartAgent(CartAgent):
                     if name.lower() in query.lower():
                         resolved_names = [name]
                         break
+                if not resolved_names:
+                    # Fuzzy match catalog items
+                    match = find_fuzzy_catalog_match(query, catalog_items, threshold=0.5)
+                    if match:
+                        resolved_names = [match]
 
         if resolved_names:
             logger.info(f"ExtendedCartAgent | resolved index-based names: {resolved_names}")
@@ -381,7 +440,7 @@ class ExtendedChatterAgent(ChatterAgent):
                             res_json = ret_response.json()
                             images = res_json.get("images") or []
                             if images:
-                                cart_retrieved[name] = images[0]
+                                cart_retrieved[name] = {"url": images[0], "price": item.get("price", 0.0)}
                         except Exception as e:
                             logger.warning(f"Failed to lookup image for {name}: {e}")
             state.retrieved = cart_retrieved
@@ -474,7 +533,7 @@ class ExtendedChatterAgent(ChatterAgent):
                             res_json = ret_response.json()
                             images = res_json.get("images") or []
                             if images:
-                                cart_retrieved[name] = images[0]
+                                cart_retrieved[name] = {"url": images[0], "price": item.get("price", 0.0)}
                         except Exception as e:
                             logger.warning(f"Failed to lookup image for {name}: {e}")
             state.retrieved = cart_retrieved

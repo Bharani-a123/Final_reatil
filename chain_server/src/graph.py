@@ -7,6 +7,7 @@ LangGraph orchestration for the Shopping Assistant.
 This module defines the topology and flow of the shopping assistant using LangGraph,
 connecting various specialized agents to handle different types of user queries.
 """
+import asyncio
 from typing import Any
 import time
 import logging
@@ -45,7 +46,8 @@ class GraphNodes:
         
         try:
             # Retrieve memory from the memory database
-            memory_response = requests.get(
+            memory_response = await asyncio.to_thread(
+                requests.get,
                 f"{_config.memory_port}/user/{state.user_id}/context",
                 timeout=10
             )
@@ -53,7 +55,8 @@ class GraphNodes:
             memory = memory_response.json()
             
             # Retrieve cart from the memory database
-            cart_response = requests.get(
+            cart_response = await asyncio.to_thread(
+                requests.get,
                 f"{_config.memory_port}/user/{state.user_id}/cart",
                 timeout=10
             )
@@ -88,7 +91,8 @@ class GraphNodes:
         start = time.monotonic()
         
         try:
-            response = requests.post(
+            response = await asyncio.to_thread(
+                requests.post,
                 f"{_config.rails_port}/rail/input/check",
                 json={"user_id": state.user_id, "query": state.query},
                 timeout=10
@@ -125,7 +129,8 @@ class GraphNodes:
         start = time.monotonic()
         
         try:
-            response = requests.post(
+            response = await asyncio.to_thread(
+                requests.post,
                 f"{_config.rails_port}/rail/output/check",
                 json={"user_id": state.user_id, "query": state.response},
                 timeout=10

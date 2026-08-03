@@ -712,15 +712,15 @@ class CartAgent():
         # Perform our associated action.
         if tool_name == "add_to_cart":
             logging.info(f"CartAgent.invoke() | Adding to cart")
-            item_name = tool_args["item_name"]
-            quantity = tool_args["quantity"]
+            item_name = tool_args.get("item_name", "")
+            quantity = int(tool_args.get("quantity", 1) or 1)
             output_state.response = self._add_to_cart(state.user_id, item_name, quantity)
             output_state.cart = self._get_cart(state.user_id)
             
         elif tool_name == "remove_from_cart":
             logging.info(f"CartAgent.invoke() | Removing from cart")
-            item_name = tool_args["item_name"]
-            quantity = tool_args["quantity"]    
+            item_name = tool_args.get("item_name", "")
+            quantity = int(tool_args.get("quantity", 1) or 1)    
             output_state.response = self._remove_from_cart(state.user_id, item_name, quantity)
             output_state.cart = self._get_cart(state.user_id)
 

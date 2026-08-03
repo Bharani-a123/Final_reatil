@@ -301,16 +301,20 @@ const Chatbox: React.FC<ChatboxProps> = ({
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let fullResponse = "";
+      let sseBuffer = "";
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(line => line.startsWith('data:'));
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop() || "";
 
         for (let line of lines) {
-          const raw = line.replace(/^data:\s*/, '');
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const raw = trimmed.replace(/^data:\s*/, '');
           
           if (raw === '[DONE]') {
             // Stream closed by server; enable submit immediately
@@ -334,14 +338,22 @@ const Chatbox: React.FC<ChatboxProps> = ({
               if (setOrderInfo) {
                 setOrderInfo(null);
               }
-              const images = Object.entries(payload).map(([productName, productUrl]) => {
-                let resolvedUrl = String(productUrl);
+              const images = Object.entries(payload).map(([productName, productData]) => {
+                let resolvedUrl = "";
+                let price = 0;
+                if (productData && typeof productData === 'object') {
+                  resolvedUrl = String((productData as any).url || "");
+                  price = Number((productData as any).price || 0);
+                } else {
+                  resolvedUrl = String(productData);
+                }
                 if (resolvedUrl && !resolvedUrl.startsWith('http') && !resolvedUrl.startsWith('data:') && !resolvedUrl.startsWith('/images/')) {
                   resolvedUrl = `/images/${resolvedUrl}`;
                 }
                 return {
                   productUrl: resolvedUrl,
-                  productName
+                  productName,
+                  price
                 };
               });
 

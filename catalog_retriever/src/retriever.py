@@ -60,7 +60,7 @@ class TextEmbeddings(Embeddings):
         """Generate text embeddings for multiple texts"""
         logging.info(f"TextEmbeddings | embed_documents() | called.")
         res = self.retriever.text_embeddings(texts)
-        normed = [list(r/np.linalg.norm(r) for r in res)]
+        normed = [list(r / np.linalg.norm(r)) if r is not None else None for r in res]
         return normed
 
 # Defines a type for storing and embedding images.
@@ -644,7 +644,7 @@ class Retriever:
                 logging.info(f"CATALOG RETRIEVER | retrieve() | Starting image task...\n\t| {base64_string[:100]}")
             if verbose:
                 logging.info(f"CATALOG RETRIEVER | retrieve() | Obtained embedding...")
-            i2i_task = asyncio.to_thread(self.image_db.similarity_search_with_relevance_scores, base64_string, k=k*len(query))
+            i2i_task = asyncio.to_thread(self.image_db.similarity_search_with_relevance_scores, base64_string, k=k*len(local_queries))
 
             unformatted_results = await asyncio.gather(*t2t_tasks, i2i_task)
         else:
@@ -655,7 +655,7 @@ class Retriever:
             for local_query in local_queries:
                 if verbose:
                     logging.info(f"\t| retrieve() | Launching text-only retrieval. Query type: {type(local_query)}, Query: {local_query}")
-                results.append(asyncio.to_thread(self.text_db.similarity_search_with_relevance_scores, local_query, k=k*len(query)))
+                results.append(asyncio.to_thread(self.text_db.similarity_search_with_relevance_scores, local_query, k=k*len(local_queries)))
             unformatted_results = await asyncio.gather(*results)
 
         sorted_unformatted_results = []
