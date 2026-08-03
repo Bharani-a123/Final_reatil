@@ -83,7 +83,7 @@ logger = logging.getLogger(__name__)
 PRODUCT_PRICES = {}
 try:
     import csv
-    csv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "selected_dataset", "products.csv")
+    csv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "selected_dataset", "products.csv")
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
