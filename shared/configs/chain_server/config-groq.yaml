@@ -1,3 +1,6 @@
 # Configuration override for Groq API
 llm_port: "https://api.groq.com/openai/v1"
 llm_name: "llama-3.1-8b-instant"
+retriever_port: "http://127.0.0.1:8010"
+memory_port: "http://127.0.0.1:8011"
+rails_port: "http://127.0.0.1:8012"
