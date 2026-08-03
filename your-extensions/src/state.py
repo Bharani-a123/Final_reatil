@@ -13,6 +13,7 @@ class ExtendedState(CoreState):
     # Channel & Session Management
     current_channel: str = Field(default="web", description="The current active channel (e.g. web, mobile, whatsapp, kiosk)")
     customer_id: Optional[str] = Field(default=None, description="The customer identifier matching user profile database records")
+    retrieved: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Dictionary of retrieved product information and pricing")
     
     # Loyalty & Offers Status
     loyalty_tier: str = Field(default="None", description="Loyalty tier of the customer (None, Bronze, Silver, Gold, Platinum)")
