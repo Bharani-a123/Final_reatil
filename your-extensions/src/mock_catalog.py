@@ -4,13 +4,13 @@
 """
 Mock Catalog Retriever service.
 Replaces Milvus and the heavy catalog_retriever container with a lightweight,
-in-memory Pandas keyword search over selected_dataset/products.csv.
+in-memory keyword search over selected_dataset/products.csv.
 """
 import os
 import sys
 import time
 import logging
-import pandas as pd
+import csv
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
@@ -27,11 +27,14 @@ CSV_PATH = os.path.join(PROJECT_ROOT, "selected_dataset", "products.csv")
 app = FastAPI(title="Mock Catalog Retriever")
 
 # Load products database
-products_df = None
+products_list = []
 if os.path.exists(CSV_PATH):
     try:
-        products_df = pd.read_csv(CSV_PATH)
-        logger.info(f"Loaded {len(products_df)} products from {CSV_PATH}")
+        with open(CSV_PATH, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                products_list.append(row)
+        logger.info(f"Loaded {len(products_list)} products from {CSV_PATH}")
     except Exception as e:
         logger.error(f"Error loading CSV dataset: {e}")
 else:
@@ -56,87 +59,85 @@ def normalize_text(t: str) -> str:
 
 def perform_search(text_queries: List[str], req_categories: List[str], filters: Dict[str, Any], k: int) -> Dict[str, List[Any]]:
     """Helper method to filter and rank products from the CSV."""
-    if products_df is None:
+    if not products_list:
         return {"texts": [], "ids": [], "similarities": [], "names": [], "images": []}
 
-    df = products_df.copy()
-    
     # 1. Category Filtering
-    # Normalize categories in request
     req_cats_norm = {normalize_text(c) for c in req_categories if c}
-    if req_cats_norm:
-        # Check if category matches or subCategory matches
-        def cat_matches(row):
-            cat = normalize_text(str(row.get("category", "")))
-            subcat = normalize_text(str(row.get("subCategory", "")))
-            mcat = normalize_text(str(row.get("masterCategory", "")))
-            return cat in req_cats_norm or subcat in req_cats_norm or mcat in req_cats_norm
-        
-        df = df[df.apply(cat_matches, axis=1)]
+    filtered_products = []
+    for row in products_list:
+        if req_cats_norm:
+            cat = normalize_text(row.get("category") or "")
+            subcat = normalize_text(row.get("subCategory") or "")
+            mcat = normalize_text(row.get("masterCategory") or "")
+            if not (cat in req_cats_norm or subcat in req_cats_norm or mcat in req_cats_norm):
+                continue
+        filtered_products.append(row)
 
     # 2. Price Filtering
     min_price = filters.get("min_price")
     max_price = filters.get("max_price")
-    if min_price is not None:
-        df = df[df["price"] >= float(min_price)]
-    if max_price is not None:
-        df = df[df["price"] <= float(max_price)]
+    
+    price_filtered = []
+    for row in filtered_products:
+        try:
+            price = float(row.get("price") or 0)
+        except (ValueError, TypeError):
+            price = 0.0
+            
+        if min_price is not None and price < float(min_price):
+            continue
+        if max_price is not None and price > float(max_price):
+            continue
+        price_filtered.append(row)
 
-    if df.empty:
+    if not price_filtered:
         return {"texts": [], "ids": [], "similarities": [], "names": [], "images": []}
 
     # 3. Text Query Matching and Ranking
     query_tokens = []
     for q in text_queries:
         if q:
-            # clean punctuation
             clean_q = "".join(char if char.isalnum() or char.isspace() else " " for char in q)
             query_tokens.extend(clean_q.lower().split())
             
     query_tokens = list(set(query_tokens)) # deduplicate
     
-    # Exclude very generic tokens
     generic_stop = {"show", "me", "find", "search", "anything", "everything", "under", "above", "in", "the", "a", "an", "do", "you", "have", "product", "item"}
     query_tokens = [tok for tok in query_tokens if tok not in generic_stop]
 
     results = []
-    for _, row in df.iterrows():
-        name = str(row.get("name", ""))
-        category = str(row.get("category", ""))
-        color = str(row.get("color", ""))
-        usage = str(row.get("usage", ""))
-        gender = str(row.get("gender", ""))
-        season = str(row.get("season", ""))
-        year = str(row.get("year", ""))
-        price = float(row.get("price", 0.0))
-        sku = str(row.get("source_id", ""))
-        image_file = str(row.get("local_image_filename", f"{sku}.jpg"))
+    for row in price_filtered:
+        name = str(row.get("name") or "")
+        category = str(row.get("category") or "")
+        color = str(row.get("color") or "")
+        usage = str(row.get("usage") or "")
+        gender = str(row.get("gender") or "")
+        season = str(row.get("season") or "")
+        year = str(row.get("year") or "")
+        try:
+            price = float(row.get("price") or 0.0)
+        except (ValueError, TypeError):
+            price = 0.0
+        sku = str(row.get("source_id") or "")
+        image_file = str(row.get("local_image_filename") or f"{sku}.jpg")
 
-        # Build dynamic description
         description = f"A beautiful {color} {usage} {category} for {gender} (Season: {season}, Year: {year})"
-        
-        # Combine text for matching
         combined_fields = f"{name} {description} {category} {color}".lower()
         
-        # Scoring
         score = 0.0
         if query_tokens:
             matches = sum(1 for token in query_tokens if token in combined_fields)
             score = matches / len(query_tokens) if len(query_tokens) > 0 else 0.0
             
-            # Exact name or category matching gets a boost
             for q in text_queries:
                 q_clean = q.lower().strip()
                 if q_clean in name.lower() or q_clean in category.lower():
                     score += 0.5
         else:
-            # If no query tokens (e.g. image filter-only refinement), rank is default
             score = 1.0
 
-        # Construct final page_content matching retriever.py:
-        # final_texts = [res[0].page_content + f"\nPRICE: {res[0].metadata['price']}" for res in ranked_results]
-        # where page_content = f"{name} | {description} | {category},{subcategory}"
-        subcategory = str(row.get("subCategory", ""))
+        subcategory = str(row.get("subCategory") or "")
         page_content = f"{name} | {description} | {category},{subcategory}\nPRICE: {price}"
 
         results.append({
@@ -147,7 +148,6 @@ def perform_search(text_queries: List[str], req_categories: List[str], filters: 
             "image": image_file
         })
 
-    # Sort results by similarity score descending
     results.sort(key=lambda x: x["similarity"], reverse=True)
     top_results = results[:k]
 
@@ -167,7 +167,6 @@ async def query_text(req: TextQueryRequest):
 @app.post("/query/image")
 async def query_image(req: ImageQueryRequest):
     logger.info(f"Mock Catalog | query_image() | Received Image query text: {req.text} | Filters: {req.filters}")
-    # In lightweight mode, treat image query text as the retrieval key, similar to text-only
     return perform_search(req.text, req.categories, req.filters, req.k)
 
 @app.get("/health")
